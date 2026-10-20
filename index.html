@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Time Progress</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --text: #000000;
+    --muted: #777777;
+    --track: #e6e6e6;
+    --year: #000000;
+    --month: #000000;
+    --week: #000000;
+    --day: #000000;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #000000;
+      --text: #ffffff;
+      --muted: #999999;
+      --track: #2a2a2a;
+      --year: #ffffff;
+      --month: #ffffff;
+      --week: #ffffff;
+      --day: #ffffff;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { background: var(--bg); }
+  body {
+    font-family: ui-sans-serif, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    color: var(--text);
+    padding: 20px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .row-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 8px;
+  }
+  .name { font-size: 15px; font-weight: 600; }
+  .sub { font-size: 12px; color: var(--muted); margin-left: 8px; font-weight: 400; }
+  .pct {
+    font-size: 22px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+  .track {
+    height: 12px;
+    background: var(--track);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .fill {
+    height: 100%;
+    width: 0;
+    border-radius: 6px;
+    background: var(--c);
+    transition: width 0.8s ease;
+  }
+  .pct { color: var(--c); }
+  .foot { font-size: 11px; color: var(--muted); }
+  @media (prefers-reduced-motion: reduce) { .fill { transition: none; } }
+</style>
+</head>
+<body>
+  <div class="bar" id="year"  style="--c: var(--year)"></div>
+  <div class="bar" id="month" style="--c: var(--month)"></div>
+  <div class="bar" id="week"  style="--c: var(--week)"></div>
+  <div class="bar" id="day"   style="--c: var(--day)"></div>
+  <div class="foot" id="foot"></div>
+
+<script>
+  // ---- Settings ----
+  const WEEK_STARTS_ON = 1; // 0 = Sunday, 1 = Monday
+  const DECIMALS = 1;       // digits after the decimal point
+  // ------------------
+
+  const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const DAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+
+  function ranges(now) {
+    const y = now.getFullYear(), m = now.getMonth();
+    const yearStart = new Date(y, 0, 1), yearEnd = new Date(y + 1, 0, 1);
+    const monthStart = new Date(y, m, 1), monthEnd = new Date(y, m + 1, 1);
+    const offset = (now.getDay() - WEEK_STARTS_ON + 7) % 7;
+    const weekStart = new Date(y, m, now.getDate() - offset);
+    const weekEnd = new Date(y, m, now.getDate() - offset + 7);
+    const dayStart = new Date(y, m, now.getDate());
+    const dayEnd = new Date(y, m, now.getDate() + 1);
+    return [
+      { id: "year",  label: "Year",  sub: String(y),            s: yearStart,  e: yearEnd },
+      { id: "month", label: "Month", sub: MONTHS[m],            s: monthStart, e: monthEnd },
+      { id: "week",  label: "Week",  sub: "Week of " + MONTHS[weekStart.getMonth()].slice(0,3) + " " + weekStart.getDate(), s: weekStart, e: weekEnd },
+      { id: "day",   label: "Day",   sub: DAYS[now.getDay()],   s: dayStart,   e: dayEnd },
+    ];
+  }
+
+  function render() {
+    const now = new Date();
+    for (const r of ranges(now)) {
+      const p = Math.min(100, Math.max(0, (now - r.s) / (r.e - r.s) * 100));
+      const el = document.getElementById(r.id);
+      if (!el.firstChild) {
+        el.innerHTML =
+          '<div class="row-head"><div><span class="name">' + r.label + '</span><span class="sub"></span></div><span class="pct"></span></div>' +
+          '<div class="track"><div class="fill"></div></div>';
+      }
+      el.querySelector(".sub").textContent = r.sub;
+      el.querySelector(".pct").textContent = p.toFixed(DECIMALS) + "%";
+      el.querySelector(".fill").style.width = p + "%";
+    }
+    document.getElementById("foot").textContent =
+      now.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+  }
+
+  render();
+  setInterval(render, 30000);
+</script>
+</body>
+</html>
